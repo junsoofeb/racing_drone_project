@@ -14,6 +14,8 @@ sock.bind(locaddr)
 # 서버의 ip('192.168.10.1')와 포트번호(8889)를 고정
 
 drone_speed = None
+rotate_speed = 100
+rotate_distance = 40
 
 def recv():
     count = 0
@@ -75,15 +77,12 @@ def up(x):
 def down(x):
     sendmsg(f'down {x}')
 
-
 # 기체 회전 각도는 1 ~ 360 degree
-# 45도로 해서 구현할 예정
 def rotate_right(x):
     sendmsg(f'cw {x}')
-    
+
 def rotate_left(x):
     sendmsg(f'ccw {x}')
-
 
 
 
@@ -141,24 +140,30 @@ def z_pos(z_position = 0, signal = 0):
         
     return current_z_position
 
-
+# 추가 정보 입력도 필요??
 name = input("이름 :")
-print("정보가 저장되었습니다.")
+print("사용자의 정보가 저장되었습니다.")
 
 manual = """
-============== 조작 방법 ==============
+=================================================== 조작 방법 ===================================================
 
-c : 시작, t : 이륙, l : 착륙
+                                            ------ 시작 및 이동 ------
 
-w : 전진, s - 후진, a - 왼쪽  d - 오른쪽
+                                        o : 시작, t : 이륙, l : 착륙 , p : 긴급 종료
 
-u : 위로, j - 아래로
+                                        w : 전진, s : 후진, a : 왼쪽,  d : 오른쪽
 
-p : 긴급 종료
+                                        u : 수직 상승, j : 수직 하강
 
-======================================
+                                              ------ 드론 회전 ------
 
-준비 후, 시작하려면 'c'를 누르세요.
+                                        q : 왼쪽 45°  회전, e : 오른쪽 45°  회전
+
+                                        z : 왼쪽 135° 회전, c : 오른쪽 135° 회전
+                                        
+=================================================================================================================
+
+                                조작 방법을 숙지하셨으면, 'o'를 눌러 조종을 시작하세요.
 """
 
 print(manual)
@@ -176,7 +181,7 @@ land_flag = 0
 # 드론 수직이 y 축      위로 == +  아래로 == -
 # 드론 좌우가 z축       오른쪽 == + 왼쪽 == -
 while True:  
-    try: 
+    try:
         if keyboard.is_pressed('w') or keyboard.is_pressed('W'):
                 try:
                     forward(40)
@@ -231,8 +236,8 @@ while True:
                     y = previous_position[-1][1]
                     z = previous_position[-1][2]
                     previous_position.append([x, y, z])
-                    print('뒤쪽으로 이동 완료')
                     time.sleep(2)
+                    print('뒤쪽으로 이동 완료')
         elif keyboard.is_pressed('u') or keyboard.is_pressed('U'):
                 try:
                     up(40)
@@ -261,19 +266,59 @@ while True:
                     previous_position.append([x, y, z])
                     time.sleep(2)
                     print('아래로 이동 완료')
+        elif keyboard.is_pressed('q') or keyboard.is_pressed('Q'):
+                try:
+                    rotate_left(45)
+                except Exception as e:
+                    print("rotate_left_f error!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
+                    print(e)
+                finally:                
+                    print('q')           
+                    action_list.append('q')
+                    time.sleep(2)                    
+                    print('왼쪽 45° 회전 완료')
+        elif keyboard.is_pressed('e') or keyboard.is_pressed('E'):
+                try:
+                    rotate_right(45)                   
+                except :
+                    print("rotate_right_f error!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
+                finally:                
+                    print('e')           
+                    action_list.append('e')
+                    time.sleep(2)                    
+                    print('오른쪽 45° 회전 완료')
+        elif keyboard.is_pressed('z') or keyboard.is_pressed('Z'):
+                try:
+                    rotate_left(135)
+                except :
+                    print("rotate_left_b error!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
+                finally:                
+                    print('z')           
+                    action_list.append('z')
+                    time.sleep(2)
+                    print('왼쪽 135° 회전 완료')
+        elif keyboard.is_pressed('c') or keyboard.is_pressed('C'):
+                try:
+                    rotate_right(135)
+                except :
+                    print("rotate_right_b error!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
+                finally:                
+                    print('c')           
+                    action_list.append('c')
+                    time.sleep(2)
+                    print('오른쪽 135° 회전 완료')
         elif keyboard.is_pressed('t') or keyboard.is_pressed('T'):
             if take_off_flag == 0:
                 action_list.append('t')
-                takeoff()
-                print('이륙합니다. 조종을 준비하세요')
-                
+                print('이륙합니다.\n조종을 준비하세요!')
+                takeoff()                
                 cnt = 3
                 while( cnt != 0):
                     print("%d 초 뒤 부터 시간 측정이 시작됩니다." % cnt)
                     cnt -= 1
                     time.sleep(1)
                 
-                print("이제 조종을 시작하세요.")    
+                print("시간 측정 시작!\n조종을 시작하세요!")    
                 take_off_flag = 1
                 start_time = time.time()
                 continue
@@ -284,6 +329,7 @@ while True:
                 action_list.append('l')
                 print('이제 착륙합니다.')
                 land()
+                time.sleep(0.1)
                 
                 print(f"{name} 님의 Racing Lap Time: %0.3f Seconds"%((time.time() - start_time )))
                 land_flag = 1
@@ -312,27 +358,31 @@ while True:
                 sys.exit()
             else:
                 continue
-        elif keyboard.is_pressed('c') or keyboard.is_pressed('C'):
+        elif keyboard.is_pressed('o') or keyboard.is_pressed('O'):
             if command_flag == 0:
-                action_list.append('c')
+                action_list.append('o')
                 try:
-                    # 설정 가능한 drone_speed 범위 10 ~ 100 cm/sec   
-                    drone_speed = 10
-                    # test에서는 안전을 위해 가장 느리게 설정함
-                    print("드론 조종을 시작합니다.")       
+                    print("\n드론 조종을 시작합니다.\n")       
                     start()
-                    print("드론 속도 : 10 cm/sec 으로 설정되었습니다.")
+                    time.sleep(0.1)
+                    # 설정 가능한 drone_speed 범위 10 ~ 100 cm/sec   
+                    drone_speed = 20
+                    # test에서는 안전을 위해 느리게 설정함
+                    print("속도 : 20 cm/sec 으로 설정있습니다.")
                     set_speed(drone_speed)
+                    time.sleep(0.1)
                     print("'T'를 눌러 이륙하세요. 이륙 후 착륙하려면 'L'을 누르세요." )
                     command_flag = 1
                 except:
+                    print("command msg error!!!!!!")
                     continue
             else:
                 continue
             
         elif keyboard.is_pressed('p') or keyboard.is_pressed('P'):
             land()
-            print("비상 착륙 완료, 프로그램이 종료됩니다.")
+            time.sleep(0.1)
+            print("\n\n비상 착륙 완료, 프로그램이 종료됩니다.\n\n")
             sock.close()
             sys.exit()
             
@@ -341,4 +391,5 @@ while True:
             time.sleep(0.1)
             continue
     except:
+        time.sleep(0.1)        
         break
