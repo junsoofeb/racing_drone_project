@@ -15,7 +15,7 @@ tellopy, easytello등 라이브러리 사용하지 않고, tello SDK 1.3.0만을
 
 keyboard_control.py에서 사용되는 사용자 메뉴얼 정보
 
-## 3. tellopy/control_and_save_log.py
+## 3. with_tellopy/control_and_save_log.py
 
 tellopy 라이브러리를 사용하여, 보다 더 간단하고 직관적으로 구현.
 라이브러리에서 통신 패킷을 생성해서 보내기 때문에, 즉각적인 명령 수행가능
