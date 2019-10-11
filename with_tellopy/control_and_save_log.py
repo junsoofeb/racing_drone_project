@@ -6,18 +6,52 @@ import datetime
 import os
 import sys
 
-write_header = True
 log_flag = 0
-save_time = datetime.datetime.now().strftime('%Y%m%d%H%M%S')
+log_save_time = datetime.datetime.now().strftime('%Y%m%d')
+
+# datetime.datetime.utcnow().strftime('%H %M %S%f')[:-5]   --> hh mm sss
+
+first_save_state = 0
+first_save_action = 0
 
 def save_state(data):
-    f.write(data + '\n')
+    global first_save_state
+    if first_save_state == 1: # 저장된 적 있음
+        f = open(f"C:/Users/feb25/Desktop/tello/racing_drone/log/{name}_{log_save_time}.txt", "r", encoding="utf-8")        
+        past_time = f.readlines()[-1][ : 10].split(' ')[2]
+        f.close()
+        now = datetime.datetime.utcnow().strftime('%H %M %S%f')[:-5]
+        if( now.split(' ')[2] != past_time ):
+            f = open(f"C:/Users/feb25/Desktop/tello/racing_drone/log/{name}_{log_save_time}.txt", "a", encoding="utf-8")        
+            f.write(now + ' ' + data + '\n')
+            f.close()    
+    else: # 첫 저장
+        f = open(f"C:/Users/feb25/Desktop/tello/racing_drone/log/{name}_{log_save_time}.txt", "a", encoding="utf-8")
+        first_save_state = 1
+        now = datetime.datetime.utcnow().strftime('%H %M %S%f')[:-5]
+        f.write(now  + ' ' + data + '\n')
+        f.close()    
+
     
 def save_action(command):
-    f.write(command + '\n')
-
+    global first_save_action
+    if  first_save_action == 1:
+        f = open(f"C:/Users/feb25/Desktop/tello/racing_drone/log/{name}_{log_save_time}.txt", "r", encoding="utf-8")
+        past_time = f.readlines()[-1][ : 10].split(' ')[2]
+        f.close()
+        now = datetime.datetime.utcnow().strftime('%H %M %S%f')[:-5]
+        if( now.split(' ')[2] != past_time ):
+            f = open(f"C:/Users/feb25/Desktop/tello/racing_drone/log/{name}_{log_save_time}.txt", "a", encoding="utf-8")            
+            f.write(now + ' ' + command + '\n')
+            f.close()    
+    else:      
+        f = open(f"C:/Users/feb25/Desktop/tello/racing_drone/log/{name}_{log_save_time}.txt", "a", encoding="utf-8")
+        first_save_action = 1        
+        now = datetime.datetime.utcnow().strftime('%H %M %S%f')[:-5]
+        f.write(now + ' ' + command + '\n')
+        f.close()    
+        
 def handler(event, sender, data, **args):
-    global write_header
     drone = sender
     if event is drone.EVENT_LOG_DATA and log_flag == 1:
         idx = str(data).find("POS")
@@ -60,6 +94,7 @@ land_flag = 0
 action_flag = 0
 
 drone = tellopy.Tello()
+drone.subscribe(drone.EVENT_LOG_DATA, handler)
 
 while True:  
     try:
@@ -161,7 +196,6 @@ while True:
             action_flag = 1
         elif keyboard.is_pressed('t') or keyboard.is_pressed('T'):
             if take_off_flag == 0:
-                f = open(f"C:/Users/feb25/Desktop/tello/racing_drone/log/{name}_{save_time}.txt", "a", encoding="utf-8")
                 save_action('t')
                 log_flag = 1
                 drone.takeoff()                
@@ -182,13 +216,16 @@ while True:
             if land_flag == 0:
                 land_flag = 1
                 save_action('l')
+                drone.set_pitch(0) #양수 전진
+                drone.set_throttle(0) #양수 위로상승
+                drone.set_roll(0)  #양수 오른쪽으로
+                drone.set_yaw(0) #양수 시계방향 회전
                 drone.land()
                 print('이제 착륙합니다.')
                 time.sleep(4)
                 log_flag = 0
-                f.close()    
                 lap_time = round(time.time() - start_time, 3)
-                print(f"\n\n\n\n\n{name} 님의 Racing Lap Time: %0.3f Seconds\n\n" % (lap_time))            
+                print(f"\n\n\n\n\n{name} 님의 Racing Lap Time: %0.3f Seconds\n\n\n\n\n" % (lap_time))            
                 drone.quit()
                 sys.exit()
             else:
@@ -196,14 +233,12 @@ while True:
         elif keyboard.is_pressed('o') or keyboard.is_pressed('O'):
             if start_flag == 0:
                 try:
-                    drone.subscribe(drone.EVENT_LOG_DATA, handler)
-                    time.sleep(0.2)
+                    # PC와 드론 연결
                     drone.connect()
-                    drone.wait_for_connection(5.0)
-                    
+                    drone.wait_for_connection(10.0)
                 except:
-                    print("tellopy drone init error!!!!!!")
-                    continue
+                    print("드론 연결 실패!!!!!!")
+                    sys.exit()
                 print("\n드론 조종을 시작합니다.\n")       
                 print("\n'T'를 눌러 이륙하세요. 이륙 후 착륙하려면 'L'을 누르세요." )
                 start_flag = 1
@@ -211,16 +246,29 @@ while True:
                 continue
             
         elif keyboard.is_pressed('p') or keyboard.is_pressed('P'):
-            drone.land()
-            print("\n\n비상 착륙 완료, 프로그램이 종료됩니다.\n\n")
-            drone.quit()
-            sys.exit()
-            
+            try:
+                drone.set_pitch(0) #양수 전진
+                drone.set_throttle(0) #양수 위로상승
+                drone.set_roll(0)  #양수 오른쪽으로
+                drone.set_yaw(0) #양수 시계방향 회전
+                drone.land()
+            except :
+                print("비상착륙 에러!!!!")
+                continue
+            finally:
+                drone.quit()
+                print("\n\n비상 착륙 완료, 프로그램이 종료됩니다.\n\n")
+                sys.exit()
         # 지정된 키가 아니면 루프 반복
         else:
             continue
     except:
-        print("while문 동작 중 에러!") 
-        drone.quit()
-        sys.exit()
-        break
+        if land_flag == 0:
+            print("while문 동작 중 에러!") 
+            drone.quit()
+            sys.exit()
+            break
+        else:
+            drone.quit()
+            sys.exit()
+            break
