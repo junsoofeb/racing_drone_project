@@ -1,6 +1,10 @@
 # racing_drone_project
 with Tello
 
+***
+## with_tellopy/control_and_save_log.py update 완료
+***
+
 
 ## 1. keyboard_control.py
 
