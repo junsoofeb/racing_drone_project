@@ -2,7 +2,7 @@
 with Tello
 
 ***
-## with_tellopy/control_and_save_log.py update 완료
+## with_tellopy/racing_drone.py update 완료
 ***
 
 
@@ -21,12 +21,12 @@ keyboard_control.py에서 사용되는 사용자 메뉴얼 정보
 <img width="716" alt="manual" src="https://user-images.githubusercontent.com/46870741/66770267-27476f00-eef2-11e9-8ec0-f70e7551b052.png">
 
 
-## 3. with_tellopy/control_and_save_log.py
+## 3. with_tellopy/racing_drone.py
 
 tellopy 라이브러리를 사용하여, 보다 더 간단하고 직관적으로 구현.
 라이브러리에서 통신 패킷을 생성해서 보내기 때문에, 즉각적인 명령 수행가능.
-log 저장 가능.
-ex) 전진하다가 회전하는 등 조종다운 조종이 가능
+log 저장 및 전처리 후 데이터화 가능  
+ex) 전진하는 도중에 회전 가능  
 
 ## 4. control_map.png
 
